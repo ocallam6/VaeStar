@@ -103,7 +103,7 @@ class StarSample:
 import minimint
 
 class Isochrones:
-    def __init__(self,filters,logagegrid,massgrid,fehgrid,phase=0):
+    def __init__(self,filters,logagegrid,massgrid,fehgrid,phase=0,override=None):
         ii = minimint.Interpolator(filters)
         self.isochrones_list=[]
         self.pad_size=None
@@ -113,14 +113,16 @@ class Isochrones:
             for lage in logagegrid:
                 iso = pd.DataFrame(ii(massgrid, lage, feh))
                 self.isochrones_list.append(iso[iso['phase']==phase].reset_index(drop=True))
-        self.slopes_creator()
+        
+        self.slopes_creator(override=override)
+        
         
 
     def plot_isochrones(self, index=None):
         fig = plt.figure(figsize=(6, 6), dpi=120)
         if(index==None):
             for isochrone in self.isochrones_list:
-                plt.plot(isochrone['Gaia_BP_EDR3']-isochrone['Gaia_RP_EDR3'], isochrone['Gaia_G_EDR3'],
+                plt.scatter(isochrone['Gaia_BP_EDR3']-isochrone['Gaia_RP_EDR3'], isochrone['Gaia_G_EDR3'],
                                 )
         else:
             isochrone=self.isochrones_list[index]
@@ -132,9 +134,10 @@ class Isochrones:
         plt.ylim(20, -15)
 
     
-    def slopes_creator(self):
+    def slopes_creator(self,override=None):
         for isochrone in self.isochrones_list:
             p_slopes=[]
+            distance=[]
             isochrone['BPRP']=isochrone['Gaia_BP_EDR3']-isochrone['Gaia_RP_EDR3']
             x=isochrone['BPRP']
             y=isochrone['Gaia_G_EDR3']
@@ -142,12 +145,35 @@ class Isochrones:
             for i in range(len(isochrone)-1):    
                 dy=y[i+1]-y[i]
                 dx=x[i+1]-x[i]
+
+                distance.append(np.sqrt(dx**2+dy**2))
+
+            distance.append(0)
+
+            isochrone['distance']=distance
+
+            
+            isochrone['distance_flag']=(isochrone['distance']<=0.3*isochrone['distance'].mean())
+            isochrone.drop(isochrone.loc[isochrone['distance_flag']==True].index, inplace=True)
+            isochrone.reset_index(drop=True,inplace=True)
+
+            isochrone.drop('distance_flag',axis=1,inplace=True)
+            isochrone.drop('distance',axis=1,inplace=True)
+
+            x=isochrone['BPRP']
+            y=isochrone['Gaia_G_EDR3']
+            for i in range(len(isochrone)-1):    
+                dy=y[i+1]-y[i]
+                dx=x[i+1]-x[i]
                 p_slopes.append(-1*dx/dy)
+
             p_slopes.append(0)
+
 
             isochrone['p_slopes']=p_slopes
             isochrone['slopes']=-1/isochrone['p_slopes']
-
+            if(type(override)==int):
+                isochrone['p_slopes']=override
             high_c=[]
             low_c=[]
             for i in range(len(isochrone)-1):
@@ -157,7 +183,7 @@ class Isochrones:
             low_c.append(0)
             isochrone['low_c']=high_c #high c is low c oops because its inverted on HR diagram and the ploot in reverse order?
             isochrone['high_c']=low_c
-            isochrone=isochrone.drop(isochrone.tail(3).index, inplace = True) #this is to try get off the turn off
+            isochrone.drop(isochrone.tail(3).index, inplace = True) #this is to try get off the turn off
     
     def stack_isochrones(self):
         tens=[]
