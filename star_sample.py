@@ -172,7 +172,7 @@ class Isochrones:
 
             isochrone['p_slopes']=p_slopes
             isochrone['slopes']=-1/isochrone['p_slopes']
-            if(type(override)==int):
+            if(override!=None):
                 isochrone['p_slopes']=override
             high_c=[]
             low_c=[]
