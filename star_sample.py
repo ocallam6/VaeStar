@@ -8,7 +8,7 @@ import torch
 
 
 class StarSample:
-    def __init__(self,input_dataframe, param_columns,error_columns):
+    def __init__(self,input_dataframe, param_columns,error_columns,twomass=False):
         if(type(input_dataframe)==pd.DataFrame):
             self.data=input_dataframe
             self.data_columns=param_columns
@@ -21,7 +21,11 @@ class StarSample:
                 self.data['bp_error']=np.sqrt(((2.5/np.log(10))*self.data['phot_bp_mean_flux_error']/self.data['phot_bp_mean_flux'])**2+0.0037793818**2)
                 self.data['rp_error']=np.sqrt(((2.5/np.log(10))*self.data['phot_rp_mean_flux_error']/self.data['phot_rp_mean_flux'])**2+0.0027901700**2)
                 self.data['bp_rp_error']=np.sqrt(self.data['rp_error']**2+self.data['bp_error']**2)
-                self.error_columns+=['phot_g_mean_mag_error','bp_error','rp_error','bp_rp_error']
+                if(twomass==True):
+                    self.data['j_k_error']=np.sqrt(self.data['j_msigcom']**2+self.data['k_msigcom']**2)
+                    self.error_columns+=['phot_g_mean_mag_error','bp_error','rp_error','bp_rp_error','j_k_error']
+                else:
+                    self.error_columns+=['phot_g_mean_mag_error','bp_error','rp_error','bp_rp_error']
             except:
                 print('Some Gaia parameters not available')    
 
@@ -103,7 +107,7 @@ class StarSample:
 import minimint
 
 class Isochrones:
-    def __init__(self,filters,logagegrid,massgrid,fehgrid,phase=0,override=None):
+    def __init__(self,filters,logagegrid,massgrid,fehgrid,phase=0,override=None,override2=None):
         ii = minimint.Interpolator(filters)
         self.isochrones_list=[]
         self.pad_size=None
@@ -114,7 +118,7 @@ class Isochrones:
                 iso = pd.DataFrame(ii(massgrid, lage, feh))
                 self.isochrones_list.append(iso[iso['phase']==phase].reset_index(drop=True))
         
-        self.slopes_creator(override=override)
+        self.slopes_creator(override=override,override2=override2)
         
         
 
@@ -134,13 +138,15 @@ class Isochrones:
         plt.ylim(20, -15)
 
     
-    def slopes_creator(self,override=None):
+    def slopes_creator(self,override=None,override2=None):
         for isochrone in self.isochrones_list:
             p_slopes=[]
             distance=[]
             isochrone['BPRP']=isochrone['Gaia_BP_EDR3']-isochrone['Gaia_RP_EDR3']
             x=isochrone['BPRP']
             y=isochrone['Gaia_G_EDR3']
+
+
             
             for i in range(len(isochrone)-1):    
                 dy=y[i+1]-y[i]
@@ -162,27 +168,58 @@ class Isochrones:
 
             x=isochrone['BPRP']
             y=isochrone['Gaia_G_EDR3']
+
+            p_slopes2=[]
+
+            # the isochrone length depends on the Gaia values, but do 2mass here
+            isochrone['JK']=isochrone['2MASS_J']-isochrone['2MASS_KS']
+            x2=isochrone['JK']
+            y2=isochrone['2MASS_KS']
             for i in range(len(isochrone)-1):    
                 dy=y[i+1]-y[i]
                 dx=x[i+1]-x[i]
+
+                dy2=y2[i+1]-y2[i]
+                dx2=x2[i+1]-x2[i]
+
                 p_slopes.append(-1*dx/dy)
+                p_slopes2.append(-1*dx2/dy2)
 
             p_slopes.append(0)
+            p_slopes2.append(0)
 
 
             isochrone['p_slopes']=p_slopes
             isochrone['slopes']=-1/isochrone['p_slopes']
+
+            isochrone['p_slopes_2']=p_slopes2
+            isochrone['slopes_2']=-1/isochrone['p_slopes_2']
             if(override!=None):
                 isochrone['p_slopes']=override
+            if(override2!=None):
+                isochrone['p_slopes_2']=override2
+
             high_c=[]
             low_c=[]
+
+            high_c2=[]
+            low_c2=[]
             for i in range(len(isochrone)-1):
                 high_c.append(isochrone['Gaia_G_EDR3'][i+1] - isochrone['p_slopes'][i]*isochrone['BPRP'][i+1])
                 low_c.append(isochrone['Gaia_G_EDR3'][i] - isochrone['p_slopes'][i]*isochrone['BPRP'][i])
+
+                high_c2.append(isochrone['2MASS_KS'][i+1] - isochrone['p_slopes_2'][i]*isochrone['JK'][i+1])
+                low_c2.append(isochrone['2MASS_KS'][i] - isochrone['p_slopes_2'][i]*isochrone['JK'][i])
             high_c.append(0)
             low_c.append(0)
+            high_c2.append(0)
+            low_c2.append(0)
             isochrone['low_c']=high_c #high c is low c oops because its inverted on HR diagram and the ploot in reverse order?
             isochrone['high_c']=low_c
+
+            isochrone['low_c_2']=high_c2 #high c is low c oops because its inverted on HR diagram and the ploot in reverse order?
+            isochrone['high_c_2']=low_c2
+
             isochrone.drop(isochrone.tail(3).index, inplace = True) #this is to try get off the turn off
     
     def stack_isochrones(self):
