@@ -16,18 +16,17 @@ class StarSample:
             self.resampled=None
             self.dropnan=False
             self.stacked=None
-            try:
-                self.data['phot_g_mean_mag_error']=np.sqrt(((2.5/np.log(10))*self.data['phot_g_mean_flux_error']/self.data['phot_g_mean_flux'])**2+0.0027553202**2)
-                self.data['bp_error']=np.sqrt(((2.5/np.log(10))*self.data['phot_bp_mean_flux_error']/self.data['phot_bp_mean_flux'])**2+0.0037793818**2)
-                self.data['rp_error']=np.sqrt(((2.5/np.log(10))*self.data['phot_rp_mean_flux_error']/self.data['phot_rp_mean_flux'])**2+0.0027901700**2)
-                self.data['bp_rp_error']=np.sqrt(self.data['rp_error']**2+self.data['bp_error']**2)
-                if(twomass==True):
-                    self.data['j_k_error']=np.sqrt(self.data['j_msigcom']**2+self.data['k_msigcom']**2)
-                    self.error_columns+=['phot_g_mean_mag_error','bp_error','rp_error','bp_rp_error','j_k_error']
-                else:
-                    self.error_columns+=['phot_g_mean_mag_error','bp_error','rp_error','bp_rp_error']
-            except:
-                print('Some Gaia parameters not available')    
+            
+            self.data['phot_g_mean_mag_error']=np.sqrt(((2.5/np.log(10))*self.data['phot_g_mean_flux_error']/self.data['phot_g_mean_flux'])**2+0.0027553202**2)
+            self.data['bp_error']=np.sqrt(((2.5/np.log(10))*self.data['phot_bp_mean_flux_error']/self.data['phot_bp_mean_flux'])**2+0.0037793818**2)
+            self.data['rp_error']=np.sqrt(((2.5/np.log(10))*self.data['phot_rp_mean_flux_error']/self.data['phot_rp_mean_flux'])**2+0.0027901700**2)
+            self.data['bp_rp_error']=np.sqrt(self.data['rp_error']**2+self.data['bp_error']**2)
+            if(twomass==True):
+                self.data['j_k_error']=np.sqrt(self.data['j_msigcom']**2+self.data['ks_msigcom']**2)
+                self.error_columns+=['phot_g_mean_mag_error','bp_error','rp_error','bp_rp_error','j_k_error']
+            else:
+                self.error_columns+=['phot_g_mean_mag_error','bp_error','rp_error','bp_rp_error']
+   
 
         else:
             raise NotImplemented
