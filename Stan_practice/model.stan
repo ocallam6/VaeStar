@@ -30,15 +30,16 @@ parameters {
   vector[N] xg;
   vector[N] xc;
   vector[N] d;
+  
 }
 
 transformed_parameters{
-  vector[N] xg;
-  vector[N] xc;
+  vector[N] dt;
   
   for(n in 1:N):
-    d[n]=(((intersection_y[i]-xg[i])/(intersection_x[i]-xc[i]))/sqrt(((intersection_y[i]-xg[i])/(intersection_x[i]-xc[i])))**2)*sqrt((intersection_y[i]-xg[i])**2+(intersection_x[i]-xc[i])**2);
-
+    {
+    dt[n]=(((intersection_y[i]-xg[i])/(intersection_x[i]-xc[i]))/sqrt(((intersection_y[i]-xg[i])/(intersection_x[i]-xc[i])))**2)*sqrt((intersection_y[i]-xg[i])**2+(intersection_x[i]-xc[i])**2);
+    }
 }
 
 model {
@@ -53,7 +54,14 @@ model {
     target += log_sum_exp(lps);
   }
 
-  xg ~ normal(xg_data,sigma_g_prior)
-  xc ~ normal(xg_data,sigma_g_prior)
+
+  for (k in 1:K) {
+      dist += theta[k]*normal(mu[k], sigma[k]);
+    }
+
+  d ~ dist;
+  xg ~ normal(xg_data,sigma_g_prior);
+  xc ~ normal(xg_data,sigma_g_prior);
+  dt~normal(d,0.1);
 
 }
