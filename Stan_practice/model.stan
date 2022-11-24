@@ -2,7 +2,7 @@ data {
   int<lower=1> K;          // number of mixture components
   int<lower=1> N;          // number of data points
   
-  vector[N] real d_obs;
+  vector[N] real d_obs; //for the prior 
   vector[N] <lower=0> sigma_g_prior;  //
   vector[N] <lower=0> sigma_c_prior;  //
 
@@ -60,8 +60,9 @@ model {
     }
 
   d ~ dist;
-  xg ~ normal(xg_data,sigma_g_prior);
-  xc ~ normal(xg_data,sigma_g_prior);
+  xg_data ~ normal(xg,sigma_g_prior);
+  xc_data ~ normal(xc,sigma_c_prior);
+
   dt~normal(d,0.1);
 
 }
