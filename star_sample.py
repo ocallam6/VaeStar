@@ -112,6 +112,7 @@ class Isochrones:
         self.pad_size=None
         self.logagegrid=logagegrid
         self.fehgrid=fehgrid
+        
         for feh in fehgrid:
             for lage in logagegrid:
                 iso = pd.DataFrame(ii(massgrid, lage, feh))
@@ -189,7 +190,7 @@ class Isochrones:
 
 
             isochrone['p_slopes']=p_slopes
-            isochrone['slopes']=-1/isochrone['p_slopes']
+            isochrone['slopes']=-1.0/isochrone['p_slopes']
 
             isochrone['p_slopes_2']=p_slopes2
             isochrone['slopes_2']=-1/isochrone['p_slopes_2']
@@ -249,12 +250,13 @@ class Isochrones:
 
         logagegrid = torch.tensor(self.logagegrid)
         fehgrid = torch.tensor(self.fehgrid)
-        feh,feh_idx=self.find_nearest(fehgrid,feh)
-        age,age_idx=self.find_nearest(logagegrid,age)
+        feh,feh_idx=self.find_nearest(fehgrid,torch.tensor(feh))
+        age,age_idx=self.find_nearest(logagegrid,torch.tensor(age))
 
         return feh_idx*len(logagegrid)+age_idx
 
     def stack_isochrones_subsample(self,feh_list,age_list):
+        feh_list=np.array(feh_list)
         substack=[]
         for feh in feh_list:
             for age in age_list:
