@@ -140,14 +140,14 @@ class Isochrones:
     
     def slopes_creator(self,override=None,override2=None):
         for isochrone in self.isochrones_list:
-            p_slopes=[]
+            
             distance=[]
             isochrone['BPRP']=isochrone['Gaia_BP_EDR3']-isochrone['Gaia_RP_EDR3']
             x=isochrone['BPRP']
             y=isochrone['Gaia_G_EDR3']
 
 
-            
+            # find the distance between subsequent points in the isochrone in Gaia space and drop those too near eachother.
             for i in range(len(isochrone)-1):    
                 dy=y[i+1]-y[i]
                 dx=x[i+1]-x[i]
@@ -166,15 +166,21 @@ class Isochrones:
             isochrone.drop('distance_flag',axis=1,inplace=True)
             isochrone.drop('distance',axis=1,inplace=True)
 
+            #2mass definition
+            isochrone['JK']=isochrone['2MASS_J']-isochrone['2MASS_KS']
+
             x=isochrone['BPRP']
             y=isochrone['Gaia_G_EDR3']
+            
+            x2=isochrone['JK']
+            y2=isochrone['2MASS_KS']
 
+
+            p_slopes=[]
             p_slopes2=[]
 
             # the isochrone length depends on the Gaia values, but do 2mass here
-            isochrone['JK']=isochrone['2MASS_J']-isochrone['2MASS_KS']
-            x2=isochrone['JK']
-            y2=isochrone['2MASS_KS']
+            
             for i in range(len(isochrone)-1):    
                 dy=y[i+1]-y[i]
                 dx=x[i+1]-x[i]
